@@ -35,6 +35,7 @@
 #include <string>
 #include <TagInfoDatabase.h>
 #include <Journal.h>
+#include "paths.h"
 
 class Database
 {
@@ -120,7 +121,7 @@ private:
   void initializeTagDatabase ();
 
 private:
-  std::string               _location {"~/.timewarrior/data"};
+  std::string               _location {paths::dbDir()};
   std::vector <Datafile>    _files    {};
   TagInfoDatabase           _tagInfoDatabase {};
   Journal*                  _journal {};

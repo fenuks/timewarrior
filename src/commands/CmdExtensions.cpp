@@ -27,6 +27,7 @@
 #include <commands.h>
 #include <Table.h>
 #include <iostream>
+#include "paths.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Enumerate all extensions.
@@ -59,8 +60,7 @@ int CmdExtensions (
     t.set (row, 1, perms);
   }
 
-  Directory extDir (rules.get ("temp.db"));
-  extDir += "extensions";
+  Directory extDir (paths::extensionsDir());
 
   std::cout << '\n'
             << "Extensions located in:\n"

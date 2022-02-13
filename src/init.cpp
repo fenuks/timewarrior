@@ -32,6 +32,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <iostream>
+#include "paths.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 bool lightweightVersionCheck (int argc, const char** argv)
@@ -152,64 +153,8 @@ void initializeDataJournalAndRules (
 
   enableDebugMode (rules.getBoolean ("debug"));
 
-  // The $TIMEWARRIORDB environment variable overrides the default value of ~/.timewarrior
-  Directory dbLocation;
-  char* override = getenv ("TIMEWARRIORDB");
-  dbLocation = Directory (override ? override : "~/.timewarrior");
-
-  // If dbLocation exists, but is not readable/writable/executable, error.
-  if (dbLocation.exists () &&
-      (! dbLocation.readable () ||
-       ! dbLocation.writable () ||
-       ! dbLocation.executable ()))
-  {
-    throw format ("Database is not readable at '{1}'", dbLocation._data);
-  }
-
-  // If dbLocation does not exist, ask whether it should be created.
-  bool shinyNewDatabase = false;
-
-  if (! dbLocation.exists () &&
-      (cli.getHint ("yes", false) ||
-       confirm ("Create new database in " + dbLocation._data + "?")))
-  {
-    dbLocation.create (0700);
-    shinyNewDatabase = true;
-  }
-
-  // Create extensions subdirectory if necessary.
-  Directory extensions (dbLocation);
-  extensions += "extensions";
-
-  if (! extensions.exists ())
-  {
-    extensions.create (0700);
-  }
-
-  // Create data subdirectory if necessary.
-  Directory data (dbLocation);
-  data += "data";
-
-  if (! data.exists ())
-  {
-    data.create (0700);
-  }
-
-  // Load the configuration data.
-  Path configFile (dbLocation);
-  configFile += "timewarrior.cfg";
-
-  if (! configFile.exists ())
-  {
-    File (configFile).create (0600);
-  }
-
-  rules.load (configFile._data);
-
-  // This value is not written out to disk, as there would be no point.
-  // Having located the config file, the 'db' location is already known.
-  // This is just for subsequent internal use.
-  rules.set ("temp.db", dbLocation._data);
+  bool shinyNewDatabase = paths::createDirs(cli);
+  rules.load (paths::configFile());
 
   // Perhaps some subsequent code would like to know this is a new db and possibly a first run.
   if (shinyNewDatabase)
@@ -231,9 +176,10 @@ void initializeDataJournalAndRules (
     }
   }
 
-  journal.initialize (data._data + "/undo.data", rules.getInteger ("journal.size"));
+  std::string dbDir = paths::dbDir();
+  journal.initialize (dbDir + "/undo.data", rules.getInteger ("journal.size"));
   // Initialize the database (no data read), but files are enumerated.
-  database.initialize (data._data, journal);
+  database.initialize (dbDir, journal);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -242,8 +188,7 @@ void initializeExtensions (
   const Rules& rules,
   Extensions& extensions)
 {
-  Directory extDir (rules.get ("temp.db"));
-  extDir += "extensions";
+  Directory extDir (paths::extensionsDir());
 
   extensions.initialize (extDir._data);
 
